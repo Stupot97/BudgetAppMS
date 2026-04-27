@@ -31,11 +31,12 @@ public class RecurringExpenseController {
         return ResponseEntity.ok(recurringExpenseService.createRecurringExpense(request));
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     public ResponseEntity<RecurringExpenseResponse> editRecurringExpense(
+            @PathVariable("id") Long id,
             @Valid @RequestBody RecurringExpenseRequest request
     )   {
-        return ResponseEntity.ok(recurringExpenseService.editRecurringExpense(request));
+        return ResponseEntity.ok(recurringExpenseService.editRecurringExpense(id, request));
     }
 
     @DeleteMapping("/{id}")

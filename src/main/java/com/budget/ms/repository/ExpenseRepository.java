@@ -7,9 +7,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.budget.ms.entity.Expense;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByDateAndTrip_TripName(LocalDate date, String tripName);
-    List<Expense> findByDateBetweenAndTrip_TripName(LocalDate startDate, LocalDate endDate, String tripName);
-    boolean existsByRecurringExpenseAndDate(RecurringExpense recurringExpense, LocalDate date);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Expense e WHERE e.recurringExpense.id = :recurringId")
+    void deleteByRecurringExpenseId(@Param("recurringId") Long recurringId);
 }

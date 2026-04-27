@@ -10,13 +10,19 @@ import com.budget.ms.model.RecurringCostDuration;
 import com.budget.ms.repository.ExpenseRepository;
 import com.budget.ms.repository.RecurringExpenseRepository;
 import com.budget.ms.repository.TripRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class RecurringExpenseService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public final RecurringExpenseRepository recurringExpenseRepository;
     public final TripRepository tripRepository;
@@ -45,6 +51,15 @@ public class RecurringExpenseService {
 
         validateRecurringExpense(request, trip);
 
+        RecurringExpense recurringExpense = getRecurringExpense(request, trip);
+        recurringExpense = recurringExpenseRepository.save(recurringExpense);
+
+        addRecurringExpenses(recurringExpense, trip);
+
+        return mapToResponse(recurringExpense);
+    }
+
+    private static RecurringExpense getRecurringExpense(RecurringExpenseRequest request, Trip trip) {
         RecurringExpense recurringExpense = new RecurringExpense();
         recurringExpense.setAmount(request.getAmount());
         recurringExpense.setCategory(request.getCategory());
@@ -54,33 +69,29 @@ public class RecurringExpenseService {
         recurringExpense.setCostDuration(request.getCostDuration());
         recurringExpense.setTrip(trip);
         recurringExpense.setCurrency(request.getCurrency());
-        recurringExpense = recurringExpenseRepository.save(recurringExpense);
-
-        addRecurringExpenses(recurringExpense, trip);
-
-        return mapToResponse(recurringExpense);
+        return recurringExpense;
     }
 
     @Transactional
-    public RecurringExpenseResponse editRecurringExpense(RecurringExpenseRequest request){
+    public RecurringExpenseResponse editRecurringExpense(Long id, RecurringExpenseRequest request){
         Trip trip = tripRepository.findByTripName(request.getTripName())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
 
         validateRecurringExpense(request, trip);
 
-        RecurringExpense recurringExpense = new RecurringExpense();
+        RecurringExpense recurringExpense = recurringExpenseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found."));
+
         recurringExpense.setAmount(request.getAmount());
         recurringExpense.setCategory(request.getCategory());
+        recurringExpense.setCurrency(request.getCurrency());
         recurringExpense.setName(request.getName());
         recurringExpense.setStartDate(request.getStartDate());
         recurringExpense.setEndDate(request.getEndDate());
         recurringExpense.setCostDuration(request.getCostDuration());
         recurringExpense.setTrip(trip);
-        recurringExpense = recurringExpenseRepository.save(recurringExpense);
 
-        //not editing, so false second argument
-
-        deleteRecurringExpenseById(recurringExpense.getId());
+        deleteRecurringExpenses(trip);
         addRecurringExpenses(recurringExpense, trip);
 
         return mapToResponse(recurringExpense);
@@ -110,13 +121,36 @@ public class RecurringExpenseService {
 
         if(trip.getEndDate()!=null && recurringExpenseRequest.getEndDate()!=null && trip.getEndDate().isBefore(recurringExpenseRequest.getEndDate()))
             throw new IllegalArgumentException("Recurring expense end date cannot be after trip end date.");
+
+        if(trip.getEndDate()==null && recurringExpenseRequest.getEndDate()==null){
+            throw new IllegalArgumentException("Either trip end date or recurring expense end date must be provided.");
+        }
     }
 
-    private void addRecurringExpenses(RecurringExpense recurringExpense, Trip trip){
-        LocalDate current = recurringExpense.getStartDate();
-        LocalDate end = recurringExpense.getEndDate().isBefore(trip.getEndDate())
+    @Transactional
+    public void deleteRecurringExpenses(Trip trip) {
+        List<RecurringExpense> recurringExpenses =
+                recurringExpenseRepository.findByTrip(trip);
+
+        for (RecurringExpense recurring : recurringExpenses) {
+            expenseRepository.deleteByRecurringExpenseId(recurring.getId());
+        }
+    }
+
+    public void addRecurringExpenses(RecurringExpense recurringExpense, Trip trip){
+        LocalDate current = recurringExpense.getStartDate().isAfter(trip.getStartDate())
+                ? recurringExpense.getStartDate()
+                : trip.getStartDate();
+
+        LocalDate recurringEnd = recurringExpense.getEndDate() != null
                 ? recurringExpense.getEndDate()
-                : trip.getEndDate();
+                : LocalDate.MAX;
+
+        LocalDate tripEnd = trip.getEndDate() != null
+                ? trip.getEndDate()
+                : LocalDate.MAX;
+
+        LocalDate end = recurringEnd.isBefore(tripEnd) ? recurringEnd : tripEnd;
 
         while (!current.isAfter(end)) {
             Expense expense = new Expense();

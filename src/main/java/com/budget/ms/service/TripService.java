@@ -5,29 +5,41 @@ import com.budget.ms.dto.BudgetSummaryResponse;
 import com.budget.ms.dto.TripRequest;
 import com.budget.ms.dto.TripResponse;
 import com.budget.ms.entity.Expense;
+import com.budget.ms.entity.RecurringExpense;
 import com.budget.ms.entity.Trip;
 import com.budget.ms.exception.DuplicateResourceException;
 import com.budget.ms.exception.ResourceNotFoundException;
+import com.budget.ms.repository.ExpenseRepository;
+import com.budget.ms.repository.RecurringExpenseRepository;
 import com.budget.ms.repository.TripRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class TripService {
 
     private final TripRepository tripRepository;
+    private final ExpenseRepository expenseRepository;
+    private final RecurringExpenseRepository recurringExpenseRepository;
     private final SettingsService settingsService;
     private final CurrencyService currencyService;
+    private final RecurringExpenseService recurringExpenseService;
 
-    public TripService(TripRepository tripRepository, SettingsService settingsService, CurrencyService currencyService){
+    public TripService(TripRepository tripRepository, ExpenseRepository expenseRepository, RecurringExpenseRepository recurringExpenseRepository, SettingsService settingsService, CurrencyService currencyService, RecurringExpenseService recurringExpenseService){
         this.tripRepository = tripRepository;
+        this.expenseRepository = expenseRepository;
+        this.recurringExpenseRepository = recurringExpenseRepository;
         this.settingsService = settingsService;
         this.currencyService = currencyService;
+        this.recurringExpenseService = recurringExpenseService;
     }
 
     public TripResponse getTrip(Long id){
@@ -94,6 +106,7 @@ public class TripService {
         return mapToResponse(tripRepository.save(trip));
     }
 
+    @Transactional
     public TripResponse editTrip(Long id, TripRequest tripRequest){
         Trip trip = tripRepository.findById(id).
                 orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
@@ -104,9 +117,9 @@ public class TripService {
 
         List<Expense> expenses = trip.getExpenses();
         if(expenses.stream().anyMatch(expense -> {
-            if(tripRequest.getStartDate().isAfter(expense.getDate()))
+            if(tripRequest.getStartDate().isAfter(expense.getDate()) && expense.getRecurringExpense()==null)
                 return true;
-            else if(tripRequest.getEndDate()!=null && expense.getDate().isAfter(tripRequest.getEndDate())){
+            else if(tripRequest.getEndDate()!=null && expense.getDate().isAfter(tripRequest.getEndDate()) && expense.getRecurringExpense()==null){
                 return true;
             }
             else
@@ -116,13 +129,27 @@ public class TripService {
             throw new IllegalArgumentException("All expense dates must be within trip dates. Please change expense dates first.");
         }
 
+        boolean datesChanged = !Objects.equals(tripRequest.getEndDate(), trip.getEndDate()) || !tripRequest.getStartDate().isEqual(trip.getStartDate());
+
         trip.setTripName(tripRequest.getTripName());
         trip.setStartDate(tripRequest.getStartDate());
         trip.setEndDate(tripRequest.getEndDate());
         trip.setBudget(tripRequest.getTripBudget());
         trip.setDailySpending(tripRequest.getDailySpending());
         trip.setCurrency(tripRequest.getCurrency());
-        return mapToResponse(tripRepository.save(trip));
+
+        if(datesChanged){
+            recurringExpenseService.deleteRecurringExpenses(trip);
+
+            List<RecurringExpense> recurringExpenses = recurringExpenseRepository.findByTrip(trip);
+            recurringExpenses.forEach(recurring ->
+                    {
+                        recurringExpenseService.addRecurringExpenses(recurring, trip);
+                    }
+            );
+        }
+
+        return mapToResponse(trip);
     }
 
     public void validateTrip(TripRequest tripRequest){

@@ -35,7 +35,7 @@ public class RecurringExpense {
     @Column(nullable = false)
     private LocalDate startDate;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
