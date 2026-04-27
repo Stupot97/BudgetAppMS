@@ -59,51 +59,6 @@ public class ExpenseService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public SummaryResponse getMonthlySummary(YearMonth month, String tripName) {
-        tripRepository.findByTripName(tripName)
-                .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
-
-        LocalDate start = month.atDay(1);
-        LocalDate end = month.atEndOfMonth();
-
-        List<Expense> expenses = expenseRepository.findByDateBetweenAndTrip_TripName(start, end, tripName);
-        String baseCurrency = settingsService.getCurrency();
-
-        SummaryResponse summary = new SummaryResponse();
-        summary.setCategoryResponses(
-                expenses.stream()
-                .collect(Collectors.groupingBy(
-                        Expense::getCategory,
-                        Collectors.mapping(
-                                expense -> currencyService.convertValue(
-                                        expense.getAmount(),
-                                        expense.getCurrency(),
-                                        baseCurrency
-                                ),
-                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
-                        )
-                ))
-                .entrySet()
-                .stream()
-                .map(entry -> new CategorySummaryResponse(
-                        entry.getKey(),
-                        entry.getValue(),
-                        tripName
-                ))
-                .toList()
-        );
-
-        summary.setCurrency(baseCurrency);
-
-        summary.setTotal(
-                summary.getCategoryResponses()
-                        .stream()
-                        .map(CategorySummaryResponse::getCategoryTotal)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-        );
-        return summary;
-    }
-
     public ExpenseResponse createExpense(ExpenseRequest request) {
         String tripName = request.getTripName();
 

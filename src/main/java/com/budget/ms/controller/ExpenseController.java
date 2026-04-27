@@ -2,7 +2,6 @@ package com.budget.ms.controller;
 
 import com.budget.ms.dto.ExpenseRequest;
 import com.budget.ms.dto.ExpenseResponse;
-import com.budget.ms.dto.SummaryResponse;
 import com.budget.ms.service.ExpenseService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 
 
@@ -47,14 +45,6 @@ public class ExpenseController {
             @RequestParam("tripName") String tripName
     ) {
         return ResponseEntity.ok(expenseService.getTotalByDate(date, tripName));
-    }
-
-    @GetMapping("/summary")
-    public ResponseEntity<SummaryResponse> getMonthlySummary(
-            @RequestParam("month") YearMonth month,
-            @RequestParam("tripName") String tripName
-    ) {
-        return ResponseEntity.ok(expenseService.getMonthlySummary(month, tripName));
     }
 
     @PostMapping
