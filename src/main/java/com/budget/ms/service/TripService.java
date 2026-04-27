@@ -1,5 +1,6 @@
 package com.budget.ms.service;
 
+import com.budget.ms.dto.AnalyticsResponse;
 import com.budget.ms.dto.BudgetSummaryResponse;
 import com.budget.ms.dto.TripRequest;
 import com.budget.ms.dto.TripResponse;
@@ -11,7 +12,9 @@ import com.budget.ms.repository.TripRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -34,6 +37,47 @@ public class TripService {
         return mapToResponse(trip);
     }
 
+    public AnalyticsResponse getTripAnalytics(Long id, LocalDate date){
+        Trip trip = tripRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));
+
+        if(trip.getStartDate().isAfter(date))
+            throw new IllegalArgumentException("Requested date cannot be before trip start date.");
+
+        if(trip.getEndDate()!=null && trip.getEndDate().isBefore(date))
+            throw new IllegalArgumentException("Requested date cannot be after trip end date.");
+
+        if(trip.getEndDate()==null && (trip.getDailySpending() == null || trip.getCurrency() == null)){
+            throw new IllegalArgumentException("Cannot provide average if there is no end date or no daily spending configured.");
+        }
+
+        AnalyticsResponse analyticsResponse = new AnalyticsResponse();
+
+        if(trip.getEndDate()!=null){
+            BigDecimal tripDuration = BigDecimal.valueOf(trip.getStartDate().until(trip.getEndDate(), ChronoUnit.DAYS));
+            BigDecimal daysBetween = BigDecimal.valueOf(trip.getStartDate().until(date, ChronoUnit.DAYS));
+            analyticsResponse.setPredicted(trip.getBudget().divide(tripDuration, 2, RoundingMode.HALF_UP).multiply(daysBetween));
+            analyticsResponse.setDate(date);
+        }
+        else{
+            BigDecimal tripDuration = BigDecimal.valueOf(trip.getStartDate().until(date, ChronoUnit.DAYS));
+            BigDecimal predictedAmountInCurrency = trip.getDailySpending().multiply(tripDuration);
+            analyticsResponse.setPredicted(currencyService.convertValue(predictedAmountInCurrency,trip.getCurrency(),settingsService.getCurrency()));
+            analyticsResponse.setDate(date);
+        }
+
+            analyticsResponse.setDate(date);
+            analyticsResponse.setActual(
+                    trip.getExpenses().
+                            stream().
+                            filter(expense -> expense.getDate().isBefore(date) || expense.getDate().isEqual(date)).
+                            map(expense -> currencyService.convertValue(expense.getAmount(), expense.getCurrency(), settingsService.getCurrency())).
+                            reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
+            return analyticsResponse;
+    }
+
+
     public TripResponse createTrip(TripRequest tripRequest){
         if(tripRepository.findByTripName(tripRequest.getTripName()).isPresent())
             throw new DuplicateResourceException("Trip name already exists.");
@@ -45,6 +89,8 @@ public class TripService {
         trip.setStartDate(tripRequest.getStartDate());
         trip.setEndDate(tripRequest.getEndDate());
         trip.setBudget(tripRequest.getTripBudget());
+        trip.setDailySpending(tripRequest.getDailySpending());
+        trip.setCurrency(tripRequest.getCurrency());
         return mapToResponse(tripRepository.save(trip));
     }
 
@@ -74,6 +120,8 @@ public class TripService {
         trip.setStartDate(tripRequest.getStartDate());
         trip.setEndDate(tripRequest.getEndDate());
         trip.setBudget(tripRequest.getTripBudget());
+        trip.setDailySpending(tripRequest.getDailySpending());
+        trip.setCurrency(tripRequest.getCurrency());
         return mapToResponse(tripRepository.save(trip));
     }
 
@@ -88,6 +136,18 @@ public class TripService {
 
         if (tripBudget.compareTo(BigDecimal.ZERO) < 0 || tripBudget.equals(BigDecimal.ZERO)) {
             throw new IllegalArgumentException("Budget cannot be 0 or negative.");
+        }
+
+        boolean endDatePresent = endDate!=null;
+        boolean currencyPresent = tripRequest.getCurrency()!=null && !tripRequest.getCurrency().isBlank();
+        boolean dailySpendingPresent = tripRequest.getDailySpending()!=null;
+
+        //either provide currency/dailybudget or enddate
+        if(endDatePresent && (currencyPresent || dailySpendingPresent) ){
+            throw new IllegalArgumentException("End date is provided. Please exclude currency and daily spending.");
+        }
+        else if(!endDatePresent && (!currencyPresent || !dailySpendingPresent)){
+            throw new IllegalArgumentException("If no end date is provided, both currency and daily spending must be provided");
         }
     }
 
@@ -132,6 +192,8 @@ public class TripService {
         tripResponse.setStartDate(trip.getStartDate());
         tripResponse.setEndDate(trip.getEndDate());
         tripResponse.setTripBudget(trip.getBudget());
+        tripResponse.setDailySpending(trip.getDailySpending());
+        tripResponse.setCurrency(trip.getCurrency());
         return tripResponse;
     }
 }

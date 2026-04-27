@@ -54,7 +54,6 @@ public class ExpenseController {
         return ResponseEntity.ok(expenseService.createExpense(request));
     }
 
-
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseResponse> updateExpense(
             @PathVariable("id") Long id,

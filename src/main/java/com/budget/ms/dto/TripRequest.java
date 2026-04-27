@@ -23,6 +23,12 @@ public class TripRequest {
     @Schema(example = "2026-04-25")
     private LocalDate endDate;
 
+    @Schema(example = "50")
+    private BigDecimal dailySpending;
+
+    @Schema(example = "USD")
+    private String currency;
+
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false, message = "Value must be greater than zero")
     @Schema(example = "2500.00")

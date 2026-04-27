@@ -29,6 +29,12 @@ public class Trip {
     @Column(nullable = false)
     private BigDecimal budget;
 
+    @Column
+    private BigDecimal dailySpending;
+
+    @Column
+    private String currency;
+
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Expense> expenses;
 }
