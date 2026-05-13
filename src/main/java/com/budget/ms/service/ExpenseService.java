@@ -9,9 +9,7 @@ import com.budget.ms.repository.TripRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 
@@ -65,12 +63,7 @@ public class ExpenseService {
         Trip trip = tripRepository.findByTripName(tripName)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found for given tripName."));
 
-        if(trip.getStartDate().isAfter(request.getDate()))
-            throw new IllegalArgumentException("Expense date cannot be before trip start date.");
-
-        if(trip.getEndDate()!=null && trip.getEndDate().isBefore(request.getDate()))
-            throw new IllegalArgumentException("Expense date cannot be after trip end date.");
-
+        verifyExpenseDates(trip,request);
 
         String currencyCode = request.getCurrency();
         currencyService.validateCurrency(currencyCode);
@@ -93,12 +86,7 @@ public class ExpenseService {
         Trip trip = tripRepository.findByTripName(request.getTripName())
                 .orElseThrow(() -> new ResourceNotFoundException("Trip defined in expense not found"));
 
-        if(trip.getStartDate().isAfter(request.getDate()))
-            throw new IllegalArgumentException("Expense date cannot be before trip start date.");
-
-        if(trip.getEndDate()!=null && trip.getEndDate().isBefore(request.getDate()))
-            throw new IllegalArgumentException("Expense date cannot be after trip end date.");
-
+        verifyExpenseDates(trip,request);
 
         String currencyCode = request.getCurrency();
 
@@ -131,6 +119,15 @@ public class ExpenseService {
         response.setCurrency(expense.getCurrency());
         response.setTripName(expense.getTrip().getTripName());
         return response;
+    }
+
+    private void verifyExpenseDates(Trip trip, ExpenseRequest request){
+        if(trip.getStartDate().isAfter(request.getDate()))
+            throw new IllegalArgumentException("Expense date cannot be before trip start date.");
+
+        if(trip.getEndDate()!=null && trip.getEndDate().isBefore(request.getDate()))
+            throw new IllegalArgumentException("Expense date cannot be after trip end date.");
+
     }
 
 }

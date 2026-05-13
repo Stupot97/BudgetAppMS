@@ -10,8 +10,6 @@ import com.budget.ms.model.RecurringCostDuration;
 import com.budget.ms.repository.ExpenseRepository;
 import com.budget.ms.repository.RecurringExpenseRepository;
 import com.budget.ms.repository.TripRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +18,6 @@ import java.util.List;
 
 @Service
 public class RecurringExpenseService {
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     public final RecurringExpenseRepository recurringExpenseRepository;
     public final TripRepository tripRepository;
@@ -116,6 +111,9 @@ public class RecurringExpenseService {
     }
 
     private void validateRecurringExpense(RecurringExpenseRequest recurringExpenseRequest, Trip trip){
+        if(recurringExpenseRequest.getEndDate()!=null && recurringExpenseRequest.getStartDate().isAfter(recurringExpenseRequest.getEndDate()))
+            throw new IllegalArgumentException("Recurring expense start date cannot be after its end date.");
+
         if(trip.getStartDate().isAfter(recurringExpenseRequest.getStartDate()))
             throw new IllegalArgumentException("Recurring expense start date cannot be before trip start date.");
 

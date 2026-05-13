@@ -19,9 +19,11 @@ public class CurrencyService {
 
     private final Map<String, Map<String, Double>> cachedRates = new HashMap<>();
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public CurrencyService(){}
+    public CurrencyService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public BigDecimal convertValue(BigDecimal amount, String baseCurrency, String targetCurrency){
         String url = currencyApiUrl + baseCurrency;
@@ -56,7 +58,7 @@ public class CurrencyService {
         String url = currencyApiUrl + currencyCode;
 
         try {
-            Currency.getInstance(currencyCode); // built-in Java validation
+            Currency.getInstance(currencyCode);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Unsupported currency: " + currencyCode);
         }
