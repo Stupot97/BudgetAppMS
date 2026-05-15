@@ -4,6 +4,7 @@ import com.budget.ms.entity.AppSettings;
 import com.budget.ms.repository.SettingsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
@@ -11,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+
+@ActiveProfiles("test")
 class SettingsServiceTest {
 
     private SettingsRepository settingsRepository;

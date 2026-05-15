@@ -10,6 +10,7 @@ import com.budget.ms.repository.ExpenseRepository;
 import com.budget.ms.repository.TripRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+
+@ActiveProfiles("test")
 class ExpenseServiceTest {
 
     private ExpenseRepository expenseRepository;
