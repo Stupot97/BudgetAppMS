@@ -37,4 +37,7 @@ public class Trip {
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Expense> expenses;
+
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecurringExpense> recurringExpenses;
 }
