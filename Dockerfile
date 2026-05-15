@@ -1,4 +1,4 @@
-FROM gradle:8.7-jdk21 AS build
+FROM gradle:8.7-jdk17 AS build
 
 WORKDIR /app
 
@@ -6,11 +6,11 @@ COPY . .
 
 RUN gradle build -x test
 
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-COPY --from=build /app/build/libs/*.jar BudgetAppMs-0.0.1-SNAPSHOT.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
