@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/trip")
@@ -26,6 +27,12 @@ public class TripController {
             @PathVariable("id") Long id){
 
         return ResponseEntity.ok(tripService.getTrip(id));
+    }
+
+    @GetMapping("/getAllTrips")
+    public ResponseEntity<List<TripResponse>> getAllTrips(){
+
+        return ResponseEntity.ok(tripService.getAllTrips());
     }
 
     @GetMapping("/{id}/analytics")

@@ -49,6 +49,13 @@ public class TripService {
         return mapToResponse(trip);
     }
 
+    public List<TripResponse> getAllTrips(){
+        return tripRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     public AnalyticsResponse getTripAnalytics(Long id, LocalDate date){
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Trip not found"));

@@ -18,6 +18,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +38,32 @@ public class TripControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Test
+    void shouldGetAllTrips() throws Exception {
+        TripResponse tripResponse = new TripResponse();
+        tripResponse.setTripName("Peru 2026");
+        tripResponse.setCurrency("USD");
+        tripResponse.setId(1L);
+        tripResponse.setStartDate(LocalDate.of(2026,5,3));
+        tripResponse.setDailySpending(BigDecimal.valueOf(50L));
+        tripResponse.setTripBudget(BigDecimal.valueOf(2000L));
+
+        List<TripResponse> listTrips = new ArrayList<>();
+        listTrips.add(tripResponse);
+
+        when(tripService.getAllTrips())
+                .thenReturn(listTrips);
+
+        MvcResult result = mockMvc.perform(get("/getAllTrips"))
+                .andReturn();
+
+        String json = result.getResponse().getContentAsString();
+
+        assertAll(
+                () -> assertTrue(json.contains("Peru 2026"))
+                );
+    }
 
     @Test
     void shouldGetTripById() throws Exception {
