@@ -26,6 +26,7 @@ public class TripRequest {
     @Schema(example = "50")
     private BigDecimal dailySpending;
 
+    @NotNull
     @Schema(example = "USD")
     private String currency;
 

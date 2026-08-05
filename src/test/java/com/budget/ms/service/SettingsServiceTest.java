@@ -5,6 +5,7 @@ import com.budget.ms.repository.SettingsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
@@ -20,12 +21,15 @@ class SettingsServiceTest {
 
     private SettingsService settingsService;
 
+    private RestTemplate restTemplate;
+
     @BeforeEach
     void setUp() {
         settingsRepository = mock(SettingsRepository.class);
+        restTemplate = mock(RestTemplate.class);
 
         settingsService = new SettingsService(
-                settingsRepository
+                settingsRepository, restTemplate
         );
     }
 

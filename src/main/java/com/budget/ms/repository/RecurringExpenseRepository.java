@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface RecurringExpenseRepository extends JpaRepository<RecurringExpense,Long> {
     List<RecurringExpense> findByTrip(Trip trip);
+    List<RecurringExpense> findByTripId(Long id);
 }

@@ -1,19 +1,32 @@
 package com.budget.ms.service;
 
+import com.budget.ms.dto.CurrencyResponse;
 import com.budget.ms.entity.AppSettings;
 import com.budget.ms.repository.SettingsRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Currency;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SettingsService {
 
+    @Value("${currency.api.url}")
+    private String currencyApiUrl;
+
+    private final List<String> cachedCurrencies = new ArrayList<>();
+
+    private final RestTemplate restTemplate;
+
     private final SettingsRepository settingsRepository;
 
-    public SettingsService(SettingsRepository settingsRepository) {
+    public SettingsService(SettingsRepository settingsRepository, RestTemplate restTemplate) {
         this.settingsRepository = settingsRepository;
+        this.restTemplate = restTemplate;
     }
 
     public AppSettings getSettings() {
@@ -27,6 +40,25 @@ public class SettingsService {
 
     public String getCurrency(){
         return getSettings().getPreferredCurrency();
+    }
+
+    @Cacheable("currencies")
+    public List<CurrencyResponse> fetchCurrencyList(){
+        Map<String, Object> response =
+                restTemplate.getForObject(currencyApiUrl, Map.class);
+
+        if (response == null || response.get("rates") == null) {
+            return Collections.emptyList();
+        }
+
+        Map<String, Object> rawRates =
+                (Map<String, Object>) response.get("rates");
+
+        return rawRates.keySet()
+                .stream()
+                .sorted()
+                .map(CurrencyResponse::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional

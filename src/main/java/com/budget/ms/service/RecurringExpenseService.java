@@ -13,8 +13,10 @@ import com.budget.ms.repository.TripRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RecurringExpenseService {
@@ -23,13 +25,16 @@ public class RecurringExpenseService {
     public final TripRepository tripRepository;
     public final ExpenseRepository expenseRepository;
     public final ExpenseService expenseService;
+    public final CurrencyService currencyService;
+    public final SettingsService settingsService;
 
-
-    public RecurringExpenseService(RecurringExpenseRepository recurringExpenseRepository, TripRepository tripRepository, ExpenseRepository expenseRepository, ExpenseService expenseService){
+    public RecurringExpenseService(RecurringExpenseRepository recurringExpenseRepository, TripRepository tripRepository, ExpenseRepository expenseRepository, ExpenseService expenseService, CurrencyService currencyService, SettingsService settingsService){
         this.recurringExpenseRepository = recurringExpenseRepository;
         this.tripRepository = tripRepository;
         this.expenseRepository = expenseRepository;
         this.expenseService = expenseService;
+        this.currencyService = currencyService;
+        this.settingsService = settingsService;
     }
 
     public RecurringExpenseResponse getRecurringExpenseById(Long id){
@@ -96,9 +101,21 @@ public class RecurringExpenseService {
           recurringExpenseRepository.deleteById(id);
     }
 
-    private RecurringExpenseResponse mapToResponse(RecurringExpense recurringExpense){
+    public RecurringExpenseResponse mapToResponse(RecurringExpense recurringExpense){
         RecurringExpenseResponse recurringExpenseResponse = new RecurringExpenseResponse();
         recurringExpenseResponse.setId(recurringExpense.getId());
+
+        String appCurrency = settingsService.getCurrency();
+        String expenseCurrency = recurringExpense.getCurrency();
+        BigDecimal amount = recurringExpense.getAmount();
+
+        if(appCurrency!=expenseCurrency) {
+            recurringExpenseResponse.setAmount(currencyService.convertValue(amount, expenseCurrency, appCurrency));
+        }
+        else {
+            recurringExpenseResponse.setAmount(amount);
+        }
+
         recurringExpenseResponse.setAmount(recurringExpense.getAmount());
         recurringExpenseResponse.setTripName(recurringExpense.getTrip().getTripName());
         recurringExpenseResponse.setCategory(recurringExpense.getCategory());

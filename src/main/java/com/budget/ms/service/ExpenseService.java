@@ -2,9 +2,11 @@ package com.budget.ms.service;
 
 import com.budget.ms.dto.*;
 import com.budget.ms.entity.Expense;
+import com.budget.ms.entity.RecurringExpense;
 import com.budget.ms.entity.Trip;
 import com.budget.ms.exception.ResourceNotFoundException;
 import com.budget.ms.repository.ExpenseRepository;
+import com.budget.ms.repository.RecurringExpenseRepository;
 import com.budget.ms.repository.TripRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,15 +19,17 @@ import java.util.List;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final RecurringExpenseRepository recurringExpenseRepository;
     private final CurrencyService currencyService;
     private final SettingsService settingsService;
     private final TripRepository tripRepository;
 
-    public ExpenseService(ExpenseRepository expenseRepository, TripRepository tripRepository, CurrencyService currencyService, SettingsService settingsService) {
+    public ExpenseService(ExpenseRepository expenseRepository, TripRepository tripRepository, CurrencyService currencyService, SettingsService settingsService, RecurringExpenseRepository recurringExpenseRepository) {
         this.expenseRepository = expenseRepository;
         this.tripRepository = tripRepository;
         this.currencyService = currencyService;
         this.settingsService = settingsService;
+        this.recurringExpenseRepository = recurringExpenseRepository;
     }
 
     public ExpenseResponse getExpenseById(Long id) {
@@ -106,13 +110,33 @@ public class ExpenseService {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
 
-        expenseRepository.delete(expense);
+        if(expense.getRecurringExpense()!=null){
+             if(expenseRepository.countByRecurringExpenseId(expense.getRecurringExpense().getId()) == 1)
+                 recurringExpenseRepository.deleteById(expense.getRecurringExpense().getId());
+             else
+                 expenseRepository.delete(expense);
+        }
+        else
+            expenseRepository.delete(expense);
+
     }
 
-    private ExpenseResponse mapToResponse(Expense expense) {
+    public ExpenseResponse mapToResponse(Expense expense) {
         ExpenseResponse response = new ExpenseResponse();
         response.setId(expense.getId());
         response.setName(expense.getName());
+
+        String appCurrency = settingsService.getCurrency();;
+        String expenseCurrency = expense.getCurrency();
+        BigDecimal amount = expense.getAmount();
+
+        if(appCurrency!=expenseCurrency) {
+            response.setAmount(currencyService.convertValue(amount, expenseCurrency, appCurrency));
+        }
+        else {
+            response.setAmount(amount);
+        }
+
         response.setAmount(expense.getAmount());
         response.setCategory(expense.getCategory());
         response.setDate(expense.getDate());

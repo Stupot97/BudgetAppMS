@@ -34,6 +34,7 @@ class TripServiceTest {
     private SettingsService settingsService;
     private CurrencyService currencyService;
     private RecurringExpenseService recurringExpenseService;
+    private ExpenseService expenseService;
 
     private TripService tripService;
 
@@ -52,7 +53,8 @@ class TripServiceTest {
                 recurringExpenseRepository,
                 settingsService,
                 currencyService,
-                recurringExpenseService
+                recurringExpenseService,
+                expenseService
         );
     }
 
@@ -171,7 +173,6 @@ class TripServiceTest {
     @Test
     void shouldThrowWhenEndDateIsProvidedWithExcessFields() {
         TripRequest request = createTripRequest();
-        request.setCurrency("USD");
         request.setDailySpending(new BigDecimal("50"));
 
         assertThrows(

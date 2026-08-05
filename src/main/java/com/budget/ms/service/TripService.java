@@ -1,9 +1,6 @@
 package com.budget.ms.service;
 
-import com.budget.ms.dto.AnalyticsResponse;
-import com.budget.ms.dto.BudgetSummaryResponse;
-import com.budget.ms.dto.TripRequest;
-import com.budget.ms.dto.TripResponse;
+import com.budget.ms.dto.*;
 import com.budget.ms.entity.Expense;
 import com.budget.ms.entity.RecurringExpense;
 import com.budget.ms.entity.Trip;
@@ -19,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -32,14 +30,16 @@ public class TripService {
     private final SettingsService settingsService;
     private final CurrencyService currencyService;
     private final RecurringExpenseService recurringExpenseService;
+    private final ExpenseService expenseService;
 
-    public TripService(TripRepository tripRepository, ExpenseRepository expenseRepository, RecurringExpenseRepository recurringExpenseRepository, SettingsService settingsService, CurrencyService currencyService, RecurringExpenseService recurringExpenseService){
+    public TripService(TripRepository tripRepository, ExpenseRepository expenseRepository, RecurringExpenseRepository recurringExpenseRepository, SettingsService settingsService, CurrencyService currencyService, RecurringExpenseService recurringExpenseService, ExpenseService expenseService){
         this.tripRepository = tripRepository;
         this.expenseRepository = expenseRepository;
         this.recurringExpenseRepository = recurringExpenseRepository;
         this.settingsService = settingsService;
         this.currencyService = currencyService;
         this.recurringExpenseService = recurringExpenseService;
+        this.expenseService = expenseService;
     }
 
     public TripResponse getTrip(Long id){
@@ -54,6 +54,51 @@ public class TripService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    public List<ExpenseResponse> getTripExpenses(Long tripId){
+        return expenseRepository.findByTripId(tripId)
+                .stream()
+                .map(expenseService::mapToResponse)
+                .toList();
+    }
+
+    public List<RecurringExpenseResponse> getTripRecurringExpenses(Long tripId){
+        return recurringExpenseRepository.findByTripId(tripId)
+                .stream()
+                .map(recurringExpenseService::mapToResponse)
+                .toList();
+    }
+
+    public TripEditResponse getTripEditResponse(Long tripId){
+        List<RecurringExpenseGroupedResponse> groupedResponse;
+        TripEditResponse tripEditResponse = new TripEditResponse();
+
+        groupedResponse = recurringExpenseRepository.findByTripId(tripId)
+                        .stream()
+                        .map(recurringExpense -> {
+                            RecurringExpenseGroupedResponse group = new RecurringExpenseGroupedResponse();
+                            group.setRecurringExpense(recurringExpenseService.mapToResponse(recurringExpense));
+                            group.setExpenses(recurringExpense.getExpenses()
+                                    .stream()
+                                    .map(expenseService::mapToResponse)
+                                    .collect(Collectors.toList()));
+                            return group;
+                        }).toList();
+
+        tripEditResponse.setRecurringExpenses(groupedResponse);
+
+        //get all expenses except whats inside recurring already
+        List<ExpenseResponse> expenses;
+        expenses = expenseRepository.findByTripId(tripId)
+                .stream()
+                .filter(expense -> expense.getRecurringExpense() == null)
+                .map(expenseService::mapToResponse)
+                .toList();
+
+        tripEditResponse.setExpenses(expenses);
+
+        return tripEditResponse;
     }
 
     public AnalyticsResponse getTripAnalytics(Long id, LocalDate date){
@@ -177,11 +222,11 @@ public class TripService {
         boolean dailySpendingPresent = tripRequest.getDailySpending()!=null;
 
         //either provide currency/dailybudget or enddate
-        if(endDatePresent && (currencyPresent || dailySpendingPresent) ){
-            throw new IllegalArgumentException("End date is provided. Please exclude currency and daily spending.");
+        if(endDatePresent &&  dailySpendingPresent ){
+            throw new IllegalArgumentException("End date is provided. Please exclude daily spending.");
         }
-        else if(!endDatePresent && (!currencyPresent || !dailySpendingPresent)){
-            throw new IllegalArgumentException("If no end date is provided, both currency and daily spending must be provided");
+        else if(!endDatePresent && !dailySpendingPresent){
+            throw new IllegalArgumentException("If no end date is provided, daily spending must be provided");
         }
     }
 
@@ -225,7 +270,27 @@ public class TripService {
         tripResponse.setTripName(trip.getTripName());
         tripResponse.setStartDate(trip.getStartDate());
         tripResponse.setEndDate(trip.getEndDate());
-        tripResponse.setTripBudget(trip.getBudget());
+
+        String appCurrency = settingsService.getCurrency();
+        String tripCurrency = trip.getCurrency();
+
+
+        //get all expenses and convert them to the app currency
+        List<Expense> listExpenses = expenseRepository.findByTripId(trip.getId());
+        BigDecimal totalSpent = listExpenses
+                .stream()
+                .map(expense -> currencyService.convertValue(expense.getAmount(), expense.getCurrency(), appCurrency)).
+                reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        tripResponse.setAmountSpent(totalSpent);
+
+        if(appCurrency!=tripCurrency) {
+            tripResponse.setTripBudget(currencyService.convertValue(trip.getBudget(), tripCurrency, appCurrency));
+        }
+        else {
+            tripResponse.setTripBudget(trip.getBudget());
+        }
+
         tripResponse.setDailySpending(trip.getDailySpending());
         tripResponse.setCurrency(trip.getCurrency());
         return tripResponse;

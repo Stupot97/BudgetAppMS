@@ -1,9 +1,6 @@
 package com.budget.ms.controller;
 
-import com.budget.ms.dto.BudgetSummaryResponse;
-import com.budget.ms.dto.AnalyticsResponse;
-import com.budget.ms.dto.TripRequest;
-import com.budget.ms.dto.TripResponse;
+import com.budget.ms.dto.*;
 import com.budget.ms.service.TripService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +61,27 @@ public class TripController {
 
         tripService.deleteTrip(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/expenses")
+    public ResponseEntity<List<ExpenseResponse>> getTripExpenses(
+            @PathVariable("id") Long id){
+
+        return ResponseEntity.ok(tripService.getTripExpenses(id));
+    }
+
+    @GetMapping("/{id}/recurringExpenses")
+    public ResponseEntity<List<RecurringExpenseResponse>> getTripRecurringExpenses(
+            @PathVariable("id") Long id){
+
+        return ResponseEntity.ok(tripService.getTripRecurringExpenses(id));
+    }
+
+    @GetMapping("/{id}/tripEditPage")
+    public ResponseEntity<TripEditResponse> getTripEditResponse(
+        @PathVariable("id") Long id
+        ){
+        return ResponseEntity.ok(tripService.getTripEditResponse(id));
     }
 
     @GetMapping("/{id}/budgetSummary")

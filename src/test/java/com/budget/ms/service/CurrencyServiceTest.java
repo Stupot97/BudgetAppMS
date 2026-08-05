@@ -30,7 +30,7 @@ class CurrencyServiceTest {
         ReflectionTestUtils.setField(
                 currencyService,
                 "currencyApiUrl",
-                "https://api.exchangerate-api.com/v6/latest/"
+                "https://api.exchangerate-api.com/v6/latest"
         );
     }
 

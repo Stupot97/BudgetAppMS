@@ -14,4 +14,5 @@ public class TripResponse {
     private BigDecimal dailySpending;
     private String currency;
     private BigDecimal tripBudget;
+    private BigDecimal amountSpent;
 }

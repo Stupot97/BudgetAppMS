@@ -31,6 +31,8 @@ class RecurringExpenseServiceTest {
     private TripRepository tripRepository;
     private ExpenseRepository expenseRepository;
     private ExpenseService expenseService;
+    private SettingsService settingsService;
+    private CurrencyService currencyService;
 
     private RecurringExpenseService recurringExpenseService;
 
@@ -40,12 +42,16 @@ class RecurringExpenseServiceTest {
         tripRepository = mock(TripRepository.class);
         expenseRepository = mock(ExpenseRepository.class);
         expenseService = mock(ExpenseService.class);
+        settingsService = mock(SettingsService.class);
+        currencyService = mock(CurrencyService.class);
 
         recurringExpenseService = new RecurringExpenseService(
                 recurringExpenseRepository,
                 tripRepository,
                 expenseRepository,
-                expenseService
+                expenseService,
+                currencyService,
+                settingsService
         );
     }
 

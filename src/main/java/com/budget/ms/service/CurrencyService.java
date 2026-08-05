@@ -26,7 +26,7 @@ public class CurrencyService {
     }
 
     public BigDecimal convertValue(BigDecimal amount, String baseCurrency, String targetCurrency){
-        String url = currencyApiUrl + baseCurrency;
+        String url = currencyApiUrl + "/" + baseCurrency;
 
         try{
             Map<String, Double> rates = cachedRates.computeIfAbsent(baseCurrency, x -> {
@@ -55,7 +55,7 @@ public class CurrencyService {
     }
 
     public void validateCurrency(String currencyCode){
-        String url = currencyApiUrl + currencyCode;
+        String url = currencyApiUrl + "/" + currencyCode;
 
         try {
             Currency.getInstance(currencyCode);

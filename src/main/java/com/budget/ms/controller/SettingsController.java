@@ -5,6 +5,8 @@ import com.budget.ms.service.SettingsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/settings")
 public class SettingsController {
@@ -22,6 +24,13 @@ public class SettingsController {
 
     ){
         return ResponseEntity.ok(new CurrencyResponse(settingsService.getCurrency()));
+    }
+
+    @GetMapping("/fetchCurrencies")
+    public ResponseEntity<List<CurrencyResponse>> fetchCurrencyList(
+
+    ){
+        return ResponseEntity.ok(settingsService.fetchCurrencyList());
     }
 
     @PutMapping("/currency")
