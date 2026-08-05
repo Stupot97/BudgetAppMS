@@ -18,7 +18,7 @@ public class SettingsService {
     @Value("${currency.api.url}")
     private String currencyApiUrl;
 
-    private final List<String> cachedCurrencies = new ArrayList<>();
+    private Set<String> cachedCurrencies = new HashSet<>();
 
     private final RestTemplate restTemplate;
 
@@ -44,17 +44,21 @@ public class SettingsService {
 
     @Cacheable("currencies")
     public List<CurrencyResponse> fetchCurrencyList(){
-        Map<String, Object> response =
-                restTemplate.getForObject(currencyApiUrl, Map.class);
+        if(cachedCurrencies == null || cachedCurrencies.isEmpty()){
+            Map<String, Object> response =
+                    restTemplate.getForObject(currencyApiUrl, Map.class);
 
-        if (response == null || response.get("rates") == null) {
-            return Collections.emptyList();
+            if (response == null || response.get("rates") == null) {
+                return Collections.emptyList();
+            }
+
+            Map<String, Object> rawRates =
+                    (Map<String, Object>) response.get("rates");
+
+            cachedCurrencies = new HashSet<>(rawRates.keySet());
         }
 
-        Map<String, Object> rawRates =
-                (Map<String, Object>) response.get("rates");
-
-        return rawRates.keySet()
+        return cachedCurrencies
                 .stream()
                 .sorted()
                 .map(CurrencyResponse::new)
