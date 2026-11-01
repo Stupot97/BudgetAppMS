@@ -2,7 +2,6 @@ package com.budget.ms.service;
 
 import com.budget.ms.dto.*;
 import com.budget.ms.entity.Expense;
-import com.budget.ms.entity.RecurringExpense;
 import com.budget.ms.entity.Trip;
 import com.budget.ms.exception.ResourceNotFoundException;
 import com.budget.ms.repository.ExpenseRepository;
@@ -126,11 +125,11 @@ public class ExpenseService {
         response.setId(expense.getId());
         response.setName(expense.getName());
 
-        String appCurrency = settingsService.getCurrency();;
+        String appCurrency = settingsService.getCurrency();
         String expenseCurrency = expense.getCurrency();
         BigDecimal amount = expense.getAmount();
 
-        if(appCurrency!=expenseCurrency) {
+        if(appCurrency.equals(expenseCurrency)) {
             response.setAmount(currencyService.convertValue(amount, expenseCurrency, appCurrency));
         }
         else {
