@@ -62,6 +62,9 @@ class TripServiceTest {
     void shouldGetTrip() {
         Trip trip = createTrip();
 
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
+
         when(tripRepository.findById(1L))
                 .thenReturn(Optional.of(trip));
 
@@ -120,6 +123,9 @@ class TripServiceTest {
                     trip.setId(1L);
                     return trip;
                 });
+
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
 
         
         TripResponse response =
@@ -525,6 +531,8 @@ class TripServiceTest {
         when(recurringExpenseRepository.findByTrip(trip))
                 .thenReturn(List.of(recurring));
 
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
         
         TripResponse response =
                 tripService.editTrip(1L, request);

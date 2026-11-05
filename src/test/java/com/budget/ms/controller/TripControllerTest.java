@@ -44,10 +44,13 @@ public class TripControllerTest {
         TripResponse tripResponse = new TripResponse();
         tripResponse.setTripName("Peru 2026");
         tripResponse.setCurrency("USD");
+        tripResponse.setDisplayCurrency("USD");
         tripResponse.setId(1L);
         tripResponse.setStartDate(LocalDate.of(2026,5,3));
         tripResponse.setDailySpending(BigDecimal.valueOf(50L));
         tripResponse.setTripBudget(BigDecimal.valueOf(2000L));
+        tripResponse.setDisplayTripBudget(BigDecimal.valueOf(2000L));
+        tripResponse.setAmountSpent(BigDecimal.valueOf(0));
 
         List<TripResponse> listTrips = new ArrayList<>();
         listTrips.add(tripResponse);
@@ -55,11 +58,11 @@ public class TripControllerTest {
         when(tripService.getAllTrips())
                 .thenReturn(listTrips);
 
-        MvcResult result = mockMvc.perform(get("/getAllTrips"))
+        MvcResult result = mockMvc.perform(get("/trip/getAllTrips"))
                 .andReturn();
 
         String json = result.getResponse().getContentAsString();
-
+        System.out.println("JSON PRINT:" + json);
         assertAll(
                 () -> assertTrue(json.contains("Peru 2026"))
                 );

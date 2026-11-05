@@ -7,6 +7,7 @@ import com.budget.ms.entity.Trip;
 import com.budget.ms.exception.ResourceNotFoundException;
 import com.budget.ms.model.ExpenseCategory;
 import com.budget.ms.repository.ExpenseRepository;
+import com.budget.ms.repository.RecurringExpenseRepository;
 import com.budget.ms.repository.TripRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class ExpenseServiceTest {
     private TripRepository tripRepository;
     private CurrencyService currencyService;
     private SettingsService settingsService;
+    private RecurringExpenseRepository recurringExpenseRepository;
 
     private ExpenseService expenseService;
 
@@ -38,12 +40,15 @@ class ExpenseServiceTest {
         tripRepository = mock(TripRepository.class);
         currencyService = mock(CurrencyService.class);
         settingsService = mock(SettingsService.class);
+        recurringExpenseRepository = mock(RecurringExpenseRepository.class);
+
 
         expenseService = new ExpenseService(
                 expenseRepository,
                 tripRepository,
                 currencyService,
-                settingsService
+                settingsService,
+                recurringExpenseRepository
         );
     }
 
@@ -54,6 +59,9 @@ class ExpenseServiceTest {
 
         when(expenseRepository.findById(1L))
                 .thenReturn(Optional.of(expense));
+
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
 
         ExpenseResponse response = expenseService.getExpenseById(1L);
 
@@ -84,6 +92,9 @@ class ExpenseServiceTest {
                 LocalDate.of(2025, 5, 1),
                 "Tokyo Trip"
         )).thenReturn(List.of(expense));
+
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
 
         List<ExpenseResponse> responses =
                 expenseService.getExpensesByDateAndTrip(
@@ -138,6 +149,9 @@ class ExpenseServiceTest {
         Trip trip = createTrip();
         ExpenseRequest request = createRequest();
 
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
+
         when(tripRepository.findByTripName("Tokyo Trip"))
                 .thenReturn(Optional.of(trip));
 
@@ -147,6 +161,7 @@ class ExpenseServiceTest {
                     saved.setId(1L);
                     return saved;
                 });
+
 
         ExpenseResponse response =
                 expenseService.createExpense(request);
@@ -210,6 +225,9 @@ class ExpenseServiceTest {
 
         when(expenseRepository.save(any(Expense.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(settingsService.getCurrency())
+                .thenReturn("USD");
 
         ExpenseResponse response =
                 expenseService.updateExpense(1L, request);

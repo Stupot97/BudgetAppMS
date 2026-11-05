@@ -218,7 +218,6 @@ public class TripService {
         }
 
         boolean endDatePresent = endDate!=null;
-        boolean currencyPresent = tripRequest.getCurrency()!=null && !tripRequest.getCurrency().isBlank();
         boolean dailySpendingPresent = tripRequest.getDailySpending()!=null;
 
         //either provide currency/dailybudget or enddate
