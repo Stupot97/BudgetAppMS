@@ -12,7 +12,9 @@ public class TripResponse {
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal dailySpending;
+    private String displayCurrency;
     private String currency;
+    private BigDecimal displayTripBudget;
     private BigDecimal tripBudget;
     private BigDecimal amountSpent;
 }

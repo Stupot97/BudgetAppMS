@@ -284,15 +284,18 @@ public class TripService {
 
         tripResponse.setAmountSpent(totalSpent);
 
-        if(appCurrency!=tripCurrency) {
-            tripResponse.setTripBudget(currencyService.convertValue(trip.getBudget(), tripCurrency, appCurrency));
+        if(!appCurrency.equals(tripCurrency)) {
+            tripResponse.setDisplayTripBudget(currencyService.convertValue(trip.getBudget(), tripCurrency, appCurrency));
+            tripResponse.setTripBudget(trip.getBudget());
         }
         else {
             tripResponse.setTripBudget(trip.getBudget());
+            tripResponse.setDisplayTripBudget(trip.getBudget());
         }
 
         tripResponse.setDailySpending(trip.getDailySpending());
         tripResponse.setCurrency(trip.getCurrency());
+        tripResponse.setDisplayCurrency(appCurrency);
         return tripResponse;
     }
 }
